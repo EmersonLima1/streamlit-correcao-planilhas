@@ -2,13 +2,16 @@ import pandas as pd
 import streamlit as st
 from io import BytesIO
 
+
 def remove_duplicated_rows(df):
     df.drop_duplicates(inplace=True)
     return df
 
+
 def remove_blank_rows(df):
     df.dropna(inplace=True)
     return df
+
 
 def main():
     st.title("Correções em Arquivos Excel")
@@ -34,21 +37,21 @@ def main():
             if "Remover linhas em branco" in corrections:
                 df = remove_blank_rows(df)
 
-        st.subheader("DataFrame Corrigido")
-        st.write(df)
+            st.subheader("DataFrame Corrigido")
+            st.write(df)
 
-        # Download do arquivo corrigido
-        st.subheader("Baixar arquivo corrigido")
-        excel_file = BytesIO()
-        with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
-            df.to_excel(writer, index=False, sheet_name='Sheet1')
-        excel_file.seek(0)
-        st.download_button(
-            label="Baixar arquivo corrigido",
-            data=excel_file,
-            file_name="dataframe_corrigido.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+            # Download do arquivo corrigido
+            st.subheader("Baixar arquivo corrigido")
+            excel_file = BytesIO()
+            with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
+                df.to_excel(writer, index=False, sheet_name='Sheet1')
+            excel_file.seek(0)
+            st.download_button(
+                label="Baixar arquivo corrigido",
+                data=excel_file,
+                file_name="dataframe_corrigido.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
 
 
 if __name__ == "__main__":
