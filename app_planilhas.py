@@ -2,33 +2,41 @@ import pandas as pd
 import streamlit as st
 from io import BytesIO
 
+
 def remove_duplicated_rows(df):
     df.drop_duplicates(inplace=True)
     return df
+
 
 def remove_blank_rows(df):
     df.dropna(inplace=True)
     return df
 
+
 def convert_to_complete_date(df, column_name):
     df[column_name] = pd.to_datetime(df[column_name])
     return df
+
 
 def create_day_column(df, column_name):
     df[column_name + "_day"] = df[column_name].dt.day
     return df
 
+
 def create_month_column(df, column_name):
     df[column_name + "_month"] = df[column_name].dt.month
     return df
+
 
 def create_year_column(df, column_name):
     df[column_name + "_year"] = df[column_name].dt.year
     return df
 
+
 def capitalize_first_letter(df, column_name):
     df[column_name] = df[column_name].str.title()
     return df
+
 
 def main():
     st.title("Correções em Arquivos Excel")
@@ -39,6 +47,21 @@ def main():
         df = pd.read_excel(uploaded_file)
 
         st.subheader("DataFrame Original")
+        st.write(df)
+
+        st.subheader("Deseja realizar quais correções?")
+        corrections = st.multiselect(
+            "Selecione as correções desejadas:",
+            ["Remover linhas duplicadas", "Remover linhas em branco"]
+        )
+
+        if "Remover linhas duplicadas" in corrections:
+            df = remove_duplicated_rows(df)
+
+        if "Remover linhas em branco" in corrections:
+            df = remove_blank_rows(df)
+
+        st.subheader("DataFrame Após Remoção de Linhas")
         st.write(df)
 
         column_names = list(df.columns)
@@ -78,6 +101,9 @@ def main():
 
             st.subheader("DataFrame Corrigido")
             st.write(df)
+
+            # Download do arquivo corrigido
+
 
             # Download do arquivo corrigido
             st.subheader("Baixar arquivo corrigido")
