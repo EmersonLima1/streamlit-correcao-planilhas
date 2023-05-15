@@ -2,16 +2,13 @@ import pandas as pd
 import streamlit as st
 from io import BytesIO
 
-
 def remove_duplicated_rows(df):
     df.drop_duplicates(inplace=True)
     return df
 
-
 def remove_blank_rows(df):
     df.dropna(inplace=True)
     return df
-
 
 def main():
     st.title("Correções em Arquivos Excel")
