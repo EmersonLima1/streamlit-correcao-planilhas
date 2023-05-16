@@ -108,7 +108,7 @@ def main():
                 with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
                     df.to_excel(writer, index=False, sheet_name='Sheet1')
                 excel_file.seek(0)
-                        st.download_button(
+                st.download_button(
                         label="Baixar arquivo corrigido",
                         data=excel_file,
                         file_name="dataframe_corrigido.xlsx",
