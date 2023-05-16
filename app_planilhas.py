@@ -41,56 +41,63 @@ def main():
         st.subheader("DataFrame Original")
         st.write(df)
 
-        st.subheader("Deseja realizar quais correções?")
-        correcoes = st.multiselect(
-            "Selecione as correções desejadas:",
-            ["Remover linhas duplicadas", "Remover linhas em branco"]
-        )
+        st.subheader("O que deseja corrigir?")
+        correcao_opcao = st.radio("Selecione a opção de correção:", ("Linhas", "Colunas", "Linhas e Colunas"))
 
-        if "Remover linhas duplicadas" in correcoes:
-            df = remover_linhas_duplicadas(df)
+        if correcao_opcao == "Linhas" or correcao_opcao == "Linhas e Colunas":
+            st.subheader("Deseja realizar quais correções nas linhas?")
+            correcoes_linhas = st.multiselect(
+                "Selecione as correções desejadas:",
+                ["Remover linhas duplicadas", "Remover linhas em branco"]
+            )
 
-        if "Remover linhas em branco" in correcoes:
-            df = remover_linhas_em_branco(df)
+            if "Remover linhas duplicadas" in correcoes_linhas:
+                df = remover_linhas_duplicadas(df)
 
-        st.subheader("DataFrame Após Remoção de Linhas")
-        st.write(df)
+            if "Remover linhas em branco" in correcoes_linhas:
+                df = remover_linhas_em_branco(df)
 
-        nomes_colunas = list(df.columns)
-        coluna_selecionada = st.selectbox("Selecione a coluna para correção", nomes_colunas)
+            st.subheader("DataFrame após correções das linhas")
+            st.write(df)
 
-        if st.button("Aplicar correções"):
-            if coluna_selecionada:
-                tipo_coluna_selecionada = df[coluna_selecionada].dtype
+        if correcao_opcao == "Colunas" or correcao_opcao == "Linhas e Colunas":
+            st.subheader("Correções nas colunas")
 
-                st.subheader(f"Correções para a coluna '{coluna_selecionada}'")
+            nomes_colunas = list(df.columns)
+            colunas_selecionadas = st.multiselect("Selecione as colunas para correção:", nomes_colunas)
 
-                if tipo_coluna_selecionada == "datetime64[ns]":
-                    correcoes_data = st.multiselect(
-                        "Selecione as correções desejadas:",
-                        ["Converter para data completa", "Criar coluna de dia", "Criar coluna de mês", "Criar coluna de ano"]
-                    )
+            if st.button("Confirmar colunas selecionadas"):
+                for coluna_selecionada in colunas_selecionadas:
+                    tipo_coluna_selecionada = df[coluna_selecionada].dtype
 
-                    if "Converter para data completa" in correcoes_data:
-                        df = converter_para_data_completa(df, coluna_selecionada)
+                    st.subheader(f"Correções para a coluna '{coluna_selecionada}'")
 
-                    if "Criar coluna de dia" in correcoes_data:
-                        df = criar_coluna_dia(df, coluna_selecionada)
+                    if tipo_coluna_selecionada == "datetime64[ns]":
+                        correcoes_data = st.multiselect(
+                            "Selecione as correções desejadas:",
+                            ["Converter para data completa", "Criar coluna de dia", "Criar coluna de mês", "Criar coluna de ano"]
+                        )
 
-                    if "Criar coluna de mês" in correcoes_data:
-                        df = criar_coluna_mes(df, coluna_selecionada)
+                        if "Converter para data completa" in correcoes_data:
+                            df = converter_para_data_completa(df, coluna_selecionada)
 
-                    if "Criar coluna de ano" in correcoes_data:
-                        df = criar_coluna_ano(df, coluna_selecionada)
+                        if "Criar coluna de dia" in correcoes_data:
+                            df = criar_coluna_dia(df, coluna_selecionada)
 
-                elif tipo_coluna_selecionada == "object":
-                    correcoes_texto = st.multiselect(
-                        "Selecione as correções desejadas:",
-                        ["Converter primeira letra de cada palavra para maiúscula"]
-                    )
+                        if "Criar coluna de mês" in correcoes_data:
+                            df = criar_coluna_mes(df, coluna_selecionada)
 
-                    if "Converter primeira letra de cada palavra para maiúscula" in correcoes_texto:
-                        df = capitalizar_primeira_letra(df, coluna_selecionada)
+                        if "Criar coluna de ano" in correcoes_data:
+                            df = criar_coluna_ano(df, coluna_selecionada)
+
+                    elif tipo_coluna_selecionada == "object":
+                        correcoes_texto = st.multiselect(
+                            "Selecione as correções desejadas:",
+                            ["Converter primeira letra de cada palavra para maiúscula"]
+                        )
+
+                        if "Converter primeira letra de cada palavra para maiúscula" in correcoes_texto:
+                            df = capitalizar_primeira_letra(df, coluna_selecionada)
 
                 st.subheader("DataFrame Corrigido")
                 st.write(df)
@@ -101,12 +108,26 @@ def main():
                 with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
                     df.to_excel(writer, index=False, sheet_name='Sheet1')
                 excel_file.seek(0)
-                st.download_button(
-                    label="Baixar arquivo corrigido",
-                    data=excel_file,
-                    file_name="dataframe_corrigido.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
+                                    st.download_button(
+                        label="Baixar arquivo corrigido",
+                        data=excel_file,
+                        file_name="dataframe_corrigido.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+
+            st.subheader("Baixar arquivo corrigido")
+            excel_file = BytesIO()
+            with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
+                df.to_excel(writer, index=False, sheet_name='Sheet1')
+            excel_file.seek(0)
+            st.download_button(
+                label="Baixar arquivo corrigido",
+                data=excel_file,
+                file_name="dataframe_corrigido.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
 
 if __name__ == "__main__":
     main()
+
+
