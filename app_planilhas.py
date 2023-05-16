@@ -1,3 +1,7 @@
+import pandas as pd
+import streamlit as st
+from io import BytesIO
+
 def remover_linhas_duplicadas(df):
     df.drop_duplicates(inplace=True)
     return df
