@@ -38,7 +38,7 @@ def main():
     if uploaded_file is not None:
         df = pd.read_excel(uploaded_file)
 
-        st.subheader("DataFrame Original")
+        st.subheader("Arquivo de dados original")
         st.write(df)
 
         st.subheader("O que deseja corrigir?")
@@ -99,7 +99,7 @@ def main():
                         if "Converter primeira letra de cada palavra para maiúscula" in correcoes_texto:
                             df = capitalizar_primeira_letra(df, coluna_selecionada)
 
-                st.subheader("DataFrame Corrigido")
+                st.subheader("Arquivo de dados corrigido")
                 st.write(df)
 
                 # Download do arquivo corrigido
