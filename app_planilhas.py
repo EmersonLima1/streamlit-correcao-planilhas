@@ -57,7 +57,7 @@ def main():
             if "Remover linhas em branco" in correcoes_linhas:
                 df = remover_linhas_em_branco(df)
 
-            st.subheader("DataFrame após correções das linhas")
+            st.subheader("Arquivo de dados após correções das linhas")
             st.write(df)
 
         if correcao_opcao == "Colunas" or correcao_opcao == "Linhas e Colunas":
