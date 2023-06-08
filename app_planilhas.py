@@ -32,6 +32,14 @@ def identificar_problemas(df):
             if valores_negativos.any():
                 linhas = df[valores_negativos].index.tolist()
                 problemas.append(f"Valores negativos encontrados na coluna '{coluna}' nas linhas {linhas}.")
+                
+    # Verificar nomes próprios iniciados com letra minúscula
+    for coluna in df.columns:
+        if df[coluna].dtype == 'object':
+            nomes_minusculos = df[coluna].str.contains(r'\b[a-z]\w*\b')
+            if nomes_minusculos.any():
+                linhas = df[nomes_minusculos][coluna].index.tolist()
+                problemas.append(f"Nomes próprios iniciados com letra minúscula encontrados na coluna '{coluna}' nas linhas {linhas}.")
     
     return problemas
 
@@ -43,7 +51,7 @@ def corrigir_problemas(df, problemas_corrigir):
     
     # Preencher valores em branco com uma string vazia
     if 'Valores em branco' in problemas_corrigir:
-        df = df.fillna('')
+        df = df.dropna()
     
     # Converter valores numéricos em colunas de nomes para string vazia
     if 'Valores numéricos' in problemas_corrigir:
@@ -58,6 +66,13 @@ def corrigir_problemas(df, problemas_corrigir):
             if df[coluna].dtype in ['int64', 'float64']:
                 valores_negativos = df[coluna] < 0
                 df.loc[valores_negativos, coluna] = 0
+                
+    # Corrigir nomes próprios iniciados com letra minúscula
+    if 'Nomes próprios iniciados com letra minúscula' in problemas_corrigir:
+        for coluna in df.columns:
+            if df[coluna].dtype == 'object':
+                nomes_minusculos = df[coluna].str.contains(r'\b[a-z]\w*\b')
+                df.loc[nomes_minusculos, coluna] = df.loc[nomes_minusculos, coluna].str.capitalize()
     
     return df
 
