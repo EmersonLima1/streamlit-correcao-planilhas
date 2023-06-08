@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import io
 
 # Função para identificar problemas na planilha
 def identificar_problemas(df):
@@ -112,6 +113,13 @@ if uploaded_file is not None:
             # Download do arquivo Excel corrigido
             st.header("Arquivo Excel corrigido")
             st.dataframe(df_corrigido)
-            st.download_button("Baixar arquivo Excel corrigido", df_corrigido.to_excel, file_name="planilha_corrigida.xlsx", label="Clique aqui para baixar")
+            
+            # Criar um buffer para o arquivo Excel
+            excel_buffer = io.BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+                df_corrigido.to_excel(writer, index=False, sheet_name='Planilha Corrigida')
+            
+            # Criar o botão de download do arquivo Excel corrigido
+            st.download_button("Baixar arquivo Excel corrigido", excel_buffer.getvalue, file_name="planilha_corrigida.xlsx", label="Clique aqui para baixar")
     else:
         st.write("Nenhum problema identificado.")
