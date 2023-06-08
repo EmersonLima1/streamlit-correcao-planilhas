@@ -1,133 +1,101 @@
-import pandas as pd
 import streamlit as st
-from io import BytesIO
+import pandas as pd
 
-def remover_linhas_duplicadas(df):
-    df.drop_duplicates(inplace=True)
+# Função para identificar problemas na planilha
+def identificar_problemas(df):
+    problemas = []
+    
+    # Verificar valores numéricos em colunas de nomes
+    for coluna in df.columns:
+        if df[coluna].dtype == 'object':
+            valores_numericos = df[coluna].str.isnumeric()
+            if valores_numericos.any():
+                linhas = df[valores_numericos][coluna].index.tolist()
+                problemas.append(f"Valores numéricos encontrados na coluna '{coluna}' nas linhas {linhas}.")
+    
+    # Verificar valores em branco
+    valores_em_branco = df.isnull().any(axis=1)
+    if valores_em_branco.any():
+        linhas = df[valores_em_branco].index.tolist()
+        problemas.append(f"Valores em branco encontrados nas linhas {linhas}.")
+    
+    # Verificar linhas duplicadas
+    duplicatas = df.duplicated()
+    if duplicatas.any():
+        linhas = df[duplicatas].index.tolist()
+        problemas.append(f"Linhas duplicadas encontradas nas linhas {linhas}.")
+    
+    # Verificar valores negativos
+    for coluna in df.columns:
+        if df[coluna].dtype in ['int64', 'float64']:
+            valores_negativos = df[coluna] < 0
+            if valores_negativos.any():
+                linhas = df[valores_negativos].index.tolist()
+                problemas.append(f"Valores negativos encontrados na coluna '{coluna}' nas linhas {linhas}.")
+    
+    return problemas
+
+# Função para corrigir problemas na planilha
+def corrigir_problemas(df, problemas_corrigir):
+    # Remover linhas duplicadas
+    if 'Linhas duplicadas' in problemas_corrigir:
+        df = df.drop_duplicates()
+    
+    # Preencher valores em branco com uma string vazia
+    if 'Valores em branco' in problemas_corrigir:
+        df = df.fillna('')
+    
+    # Converter valores numéricos em colunas de nomes para string vazia
+    if 'Valores numéricos' in problemas_corrigir:
+        for coluna in df.columns:
+            if df[coluna].dtype == 'object':
+                valores_numericos = df[coluna].str.isnumeric()
+                df.loc[valores_numericos, coluna] = ''
+    
+    # Converter valores negativos para zero
+    if 'Valores negativos' in problemas_corrigir:
+        for coluna in df.columns:
+            if df[coluna].dtype in ['int64', 'float64']:
+                valores_negativos = df[coluna] < 0
+                df.loc[valores_negativos, coluna] = 0
+    
     return df
 
-def remover_linhas_em_branco(df):
-    df.dropna(inplace=True)
-    return df
+# Configurações do Streamlit
+st.set_page_config(layout="wide")
+st.title("Identificação e Correção de Problemas em Planilhas Excel")
 
-def converter_para_data_completa(df, nome_coluna):
-    df[nome_coluna] = pd.to_datetime(df[nome_coluna])
-    return df
+# Upload do arquivo Excel
+st.sidebar.header("Upload do arquivo Excel")
+uploaded_file = st.sidebar.file_uploader("Selecione um arquivo Excel", type=["xlsx", "xls"])
 
-def criar_coluna_dia(df, nome_coluna):
-    df[nome_coluna + "_dia"] = df[nome_coluna].dt.day
-    return df
-
-def criar_coluna_mes(df, nome_coluna):
-    df[nome_coluna + "_mes"] = df[nome_coluna].dt.month
-    return df
-
-def criar_coluna_ano(df, nome_coluna):
-    df[nome_coluna + "_ano"] = df[nome_coluna].dt.year
-    return df
-
-def capitalizar_primeira_letra(df, nome_coluna):
-    df[nome_coluna] = df[nome_coluna].str.title()
-    return df
-
-def main():
-    st.title("Correções em Arquivos Excel")
-
-    uploaded_file = st.file_uploader("Faça o upload de um arquivo Excel", type=["xls", "xlsx"])
-
-    if uploaded_file is not None:
-        df = pd.read_excel(uploaded_file)
-
-        st.subheader("Arquivo de dados original")
-        st.write(df)
-
-        st.subheader("O que deseja corrigir?")
-        correcao_opcao = st.radio("Selecione a opção de correção:", ("Linhas", "Colunas", "Linhas e Colunas"))
-
-        if correcao_opcao == "Linhas" or correcao_opcao == "Linhas e Colunas":
-            st.subheader("Deseja realizar quais correções nas linhas?")
-            correcoes_linhas = st.multiselect(
-                "Selecione as correções desejadas:",
-                ["Remover linhas duplicadas", "Remover linhas em branco"]
-            )
-
-            if "Remover linhas duplicadas" in correcoes_linhas:
-                df = remover_linhas_duplicadas(df)
-
-            if "Remover linhas em branco" in correcoes_linhas:
-                df = remover_linhas_em_branco(df)
-
-            st.subheader("Arquivo de dados após correções das linhas")
-            st.write(df)
-
-        if correcao_opcao == "Colunas" or correcao_opcao == "Linhas e Colunas":
-            st.subheader("Correções nas colunas")
-
-            nomes_colunas = list(df.columns)
-            colunas_selecionadas = st.multiselect("Selecione as colunas para correção:", nomes_colunas)
-
-            if st.button("Confirmar colunas selecionadas"):
-                for coluna_selecionada in colunas_selecionadas:
-                    tipo_coluna_selecionada = df[coluna_selecionada].dtype
-
-                    st.subheader(f"Correções para a coluna '{coluna_selecionada}'")
-
-                    if tipo_coluna_selecionada == "datetime64[ns]":
-                        correcoes_data = st.multiselect(
-                            "Selecione as correções desejadas:",
-                            ["Converter para data completa", "Criar coluna de dia", "Criar coluna de mês", "Criar coluna de ano"]
-                        )
-
-                        if "Converter para data completa" in correcoes_data:
-                            df = converter_para_data_completa(df, coluna_selecionada)
-
-                        if "Criar coluna de dia" in correcoes_data:
-                            df = criar_coluna_dia(df, coluna_selecionada)
-
-                        if "Criar coluna de mês" in correcoes_data:
-                            df = criar_coluna_mes(df, coluna_selecionada)
-
-                        if "Criar coluna de ano" in correcoes_data:
-                            df = criar_coluna_ano(df, coluna_selecionada)
-
-                    elif tipo_coluna_selecionada == "object":
-                        correcoes_texto = st.multiselect(
-                            "Selecione as correções desejadas:",
-                            ["Converter primeira letra de cada palavra para maiúscula"]
-                        )
-
-                        if "Converter primeira letra de cada palavra para maiúscula" in correcoes_texto:
-                            df = capitalizar_primeira_letra(df, coluna_selecionada)
-
-                st.subheader("Arquivo de dados corrigido")
-                st.write(df)
-
-                # Download do arquivo corrigido
-                st.subheader("Baixar arquivo corrigido")
-                excel_file = BytesIO()
-                with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
-                    df.to_excel(writer, index=False, sheet_name='Sheet1')
-                excel_file.seek(0)
-                st.download_button(
-                        label="Baixar arquivo corrigido",
-                        data=excel_file,
-                        file_name="dataframe_corrigido.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    )
-
-            st.subheader("Baixar arquivo corrigido")
-            excel_file = BytesIO()
-            with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
-                df.to_excel(writer, index=False, sheet_name='Sheet1')
-            excel_file.seek(0)
-            st.download_button(
-                label="Baixar arquivo corrigido",
-                data=excel_file,
-                file_name="dataframe_corrigido.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-
-if __name__ == "__main__":
-    main()
-
-
+if uploaded_file is not None:
+    # Leitura do arquivo Excel
+    df = pd.read_excel(uploaded_file)
+    
+    # Exibição dos dados
+    st.header("Dados do arquivo Excel")
+    st.dataframe(df)
+    
+    # Identificação dos problemas
+    problemas = identificar_problemas(df)
+    
+    # Exibição dos problemas identificados
+    if problemas:
+        st.header("Problemas identificados")
+        for problema in problemas:
+            st.write(problema)
+        
+        # Seleção dos problemas a serem corrigidos
+        problemas_corrigir = st.multiselect("Selecione os problemas a serem corrigidos", problemas)
+        
+        if problemas_corrigir:
+            # Correção dos problemas selecionados
+            df_corrigido = corrigir_problemas(df, problemas_corrigir)
+            
+            # Download do arquivo Excel corrigido
+            st.header("Arquivo Excel corrigido")
+            st.dataframe(df_corrigido)
+            st.download_button("Baixar arquivo Excel corrigido", df_corrigido.to_excel, file_name="planilha_corrigida.xlsx", label="Clique aqui para baixar")
+    else:
+        st.write("Nenhum problema identificado.")
