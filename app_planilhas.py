@@ -120,6 +120,9 @@ if uploaded_file is not None:
                 df_corrigido.to_excel(writer, index=False, sheet_name='Planilha Corrigida')
             
             # Criar o botão de download do arquivo Excel corrigido
-            st.download_button("Baixar arquivo Excel corrigido", excel_buffer.getvalue, file_name="planilha_corrigida.xlsx", label="Clique aqui para baixar")
+            button_label = "Baixar arquivo Excel corrigido"
+            button_clicked = st.button(button_label)
+            if button_clicked:
+                st.download_button(label=None, data=excel_buffer.getvalue(), file_name="planilha_corrigida.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key=None)
     else:
         st.write("Nenhum problema identificado.")
