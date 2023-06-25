@@ -54,44 +54,59 @@ def corrigir_problemas(df, problemas_corrigir):
     # Preencher valores em branco com uma string vazia ou permitir que o usuário digite valores
     if 'Valores em branco' in problemas_corrigir:
         for i, linha in df.iterrows():
-            valores_em_branco = linha.isnull()
-            if valores_em_branco.all():
-                df = df.drop(i)  # Remove a linha completamente
-            elif valores_em_branco.any():
-                st.write(f"Linha {i+1}")
+            if linha.isnull().all():
+                df = df.drop(i)
+            elif linha.isnull().any():
+                st.write(f"Linha {i+1}:")
                 st.write(linha)
-                st.write("Preencha os valores em branco:")
-                for coluna in df.columns:
-                    if valores_em_branco[coluna]:
-                        novo_valor = st.text_input(f"Valor para a coluna '{coluna}'", value="")
-                        df.at[i, coluna] = novo_valor
+                preencher_valores = st.radio("Deseja preencher os valores em branco desta linha?", options=["Sim", "Não"])
+                if preencher_valores == "Sim":
+                    for coluna in df.columns:
+                        if pd.isnull(linha[coluna]):
+                            novo_valor = st.text_input(f"Digite o valor para a coluna '{coluna}'", value="")
+                            df.at[i, coluna] = novo_valor
     
     # Converter valores numéricos em colunas de nomes para string vazia ou permitir que o usuário digite valores
     if 'Valores numéricos' in problemas_corrigir:
-        for i, linha in df.iterrows():
-            for coluna in df.columns:
-                if df[coluna].dtype == 'object' and df[coluna].str.isnumeric()[i]:
-                    st.write(f"Linha {i+1}, Coluna '{coluna}'")
-                    st.write(linha[coluna])
-                    novo_valor = st.text_input("Valor para substituir o valor numérico", value="")
-                    df.at[i, coluna] = novo_valor
+        for coluna in df.columns:
+            if df[coluna].dtype == 'object':
+                valores_numericos = df[coluna].str.isnumeric()
+                if valores_numericos.any():
+                    st.write(f"Coluna '{coluna}':")
+                    st.write(df[valores_numericos][coluna])
+                    corrigir_valores = st.radio(f"Deseja corrigir os valores numéricos na coluna '{coluna}'?", options=["Sim", "Não"])
+                    if corrigir_valores == "Sim":
+                        for i, valor in df[valores_numericos][coluna].iteritems():
+                            novo_valor = st.text_input(f"Digite o novo valor para a célula ({i+1}, '{coluna}')", value="")
+                            df.at[i, coluna] = novo_valor
     
     # Converter valores negativos para zero ou permitir que o usuário digite valores
     if 'Valores negativos' in problemas_corrigir:
-        for i, linha in df.iterrows():
-            for coluna in df.columns:
-                if df[coluna].dtype in ['int64', 'float64'] and linha[coluna] < 0:
-                    st.write(f"Linha {i+1}, Coluna '{coluna}'")
-                    st.write(linha[coluna])
-                    novo_valor = st.text_input("Valor para substituir o valor negativo", value="")
-                    df.at[i, coluna] = novo_valor
+        for coluna in df.columns:
+            if df[coluna].dtype in ['int64', 'float64']:
+                valores_negativos = df[coluna] < 0
+                if valores_negativos.any():
+                    st.write(f"Coluna '{coluna}':")
+                    st.write(df[valores_negativos][coluna])
+                    corrigir_valores = st.radio(f"Deseja corrigir os valores negativos na coluna '{coluna}'?", options=["Sim", "Não"])
+                    if corrigir_valores == "Sim":
+                        for i, valor in df[valores_negativos][coluna].iteritems():
+                            novo_valor = st.number_input(f"Digite o novo valor para a célula ({i+1}, '{coluna}')", value=0)
+                            df.at[i, coluna] = novo_valor
     
     # Corrigir nomes próprios iniciados com letra minúscula
     if 'Nomes próprios iniciados com letra minúscula' in problemas_corrigir:
         for coluna in df.columns:
             if df[coluna].dtype == 'object':
                 nomes_minusculos = df[coluna].str.contains(r'\b[a-z]\w*\b', na=False)
-                df.loc[nomes_minusculos, coluna] = df.loc[nomes_minusculos, coluna].str.capitalize()
+                if nomes_minusculos.any():
+                    st.write(f"Coluna '{coluna}':")
+                    st.write(df.loc[nomes_minusculos, coluna])
+                    corrigir_nomes = st.radio(f"Deseja corrigir os nomes próprios iniciados com letra minúscula na coluna '{coluna}'?", options=["Sim", "Não"])
+                    if corrigir_nomes == "Sim":
+                        for i, valor in df.loc[nomes_minusculos, coluna].iteritems():
+                            novo_valor = st.text_input(f"Digite o novo valor para a célula ({i+1}, '{coluna}')", value="")
+                            df.at[i, coluna] = novo_valor.capitalize()
     
     return df
 
@@ -111,35 +126,34 @@ if uploaded_file is not None:
     st.header("Dados do arquivo Excel")
     st.dataframe(df)
     
-    # Identificação dos problemas
+    # Identificar problemas
     problemas = identificar_problemas(df)
     
-    # Exibição dos problemas identificados
     if problemas:
+        # Exibir problemas identificados
         st.header("Problemas identificados")
         for problema in problemas:
             st.write(problema)
         
-        # Seleção dos problemas a serem corrigidos
-        problemas_corrigir = st.multiselect("Selecione os problemas a serem corrigidos", problemas)
+        # Selecionar problemas para correção
+        problemas_corrigir = st.multiselect("Selecione os problemas que deseja corrigir:", options=problemas)
         
         if problemas_corrigir:
-            # Botão de confirmação
-            if st.button("Confirmar"):
-                # Correção dos problemas selecionados
-                df_corrigido = corrigir_problemas(df.copy(), problemas_corrigir)
-                
-                # Download do arquivo Excel corrigido
-                st.header("Arquivo Excel corrigido")
-                st.dataframe(df_corrigido)
-                
-                # Criar um buffer para o arquivo Excel
-                excel_buffer = io.BytesIO()
-                with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-                    df_corrigido.to_excel(writer, index=False, sheet_name='Planilha Corrigida')
-                
-                # Criar o botão de download do arquivo Excel corrigido
-                button_label = "Baixar arquivo Excel corrigido"
-                st.download_button(label=button_label, data=excel_buffer.getvalue(), file_name="planilha_corrigida.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key=None)     
+            # Corrigir problemas selecionados
+            df_corrigido = corrigir_problemas(df.copy(), problemas_corrigir)
+            
+            # Exibir planilha corrigida
+            st.header("Planilha corrigida")
+            st.dataframe(df_corrigido)
+            
+            # Botão para salvar alterações
+            if st.button("Salvar alterações"):
+                # Salvar planilha corrigida em um novo arquivo Excel
+                output = io.BytesIO()
+                writer = pd.ExcelWriter(output, engine='xlsxwriter')
+                df_corrigido.to_excel(writer, index=False, sheet_name='Sheet1')
+                writer.save()
+                output.seek(0)
+                st.download_button("Clique aqui para baixar o arquivo corrigido", data=output, file_name='planilha_corrigida.xlsx', mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     else:
-        st.write("Nenhum problema identificado.")
+        st.write("Não foram encontrados problemas na planilha.")
